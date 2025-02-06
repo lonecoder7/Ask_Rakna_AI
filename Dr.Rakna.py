@@ -14,7 +14,7 @@ import time
 from streamlit_feedback import streamlit_feedback
 
 nest_asyncio.apply()
-st.title("ASK Dr.RAKNA 🩺")
+st.title("ASK Dr.Rakna 🩺")
 st.markdown(
     """
     <style>
@@ -52,8 +52,12 @@ st.markdown(
 
 recognizer = sr.Recognizer()
 engine = pyttsx3.init()
-API_URL = "http://localhost:11434/api/generate"  
 
+# Set the voice for the text-to-speech engine
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)  # Set to the first voice available
+
+API_URL = "http://localhost:11434/api/generate"  
 
 def speak_text(command):
     engine.say(command)
@@ -65,7 +69,7 @@ def get_model_response(prompt):
     for attempt in range(attempts):
         try:
             response = requests.post(API_URL, json={"prompt": prompt, "model": "llama3.2"}, stream=True)
-            if response.status_code ==200:
+            if response.status_code == 200:
                 full_response = ""
                 for chunk in response.iter_lines():
                     if chunk:
@@ -86,19 +90,17 @@ def get_model_response(prompt):
 if 'conversation' not in st.session_state:
     st.session_state.conversation = []
 
-
 for message in st.session_state.conversation:
-    if "User   " in message:
+    if "User " in message:
         st.markdown(f"<div class='user-message'>{message}</div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='bot-message'>{message}</div>", unsafe_allow_html=True)
 
-
-user_input = st.text_input("Type your message here:")
+user_input = st.text_input("How can I help you:")
 
 if st.button("Send"):
     if user_input:
-        st.session_state.conversation.append(f"::User          {user_input}")
+        st.session_state.conversation.append(f":User  {user_input}")
         response = get_model_response(user_input.lower())
         st.session_state.conversation.append(f"Healthcare Assistant: {response}")
         speak_text(response)
@@ -111,15 +113,14 @@ if st.button("Speak to Assistant"):
                 audio = recognizer.listen(source)
                 recognized_text = recognizer.recognize_google(audio)
                 recognized_text = recognized_text.lower()
-                st.session_state.conversation.append(f"User:          {recognized_text}")
+                st.session_state.conversation.append(f":User  {recognized_text}")
                 response = get_model_response(recognized_text)
-                st.session_state.conversation.append(f"Healthcare Assistant: {response}")
+                st.session_state.conversation.append(f"Dr.Rakna: {response}")
                 speak_text(response)
         except sr.UnknownValueError:
             st.error("Sorry, I could not understand the audio.")
         except sr.RequestError:
             st.error("Could not request results from the speech recognition service.")
-
 
 sentiment_mapping = ["one", "two", "three", "four", "five"]
 selected = st.feedback("stars")
