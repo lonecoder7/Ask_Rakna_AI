@@ -6,14 +6,13 @@
 
 import streamlit as st
 import speech_recognition as sr
-import pyttsx3
-import nest_asyncio
 import requests
 import json
 import time
+from gtts import gTTS
+import os
 from streamlit_feedback import streamlit_feedback
 
-nest_asyncio.apply()
 st.title("ASK Dr.Rakna 🩺")
 st.markdown(
     """
@@ -51,17 +50,14 @@ st.markdown(
 )
 
 recognizer = sr.Recognizer()
-engine = pyttsx3.init()
-
-# Set the voice for the text-to-speech engine
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id)  # Set to the first voice available
-
 API_URL = "http://localhost:11434/api/generate"  
 
 def speak_text(command):
-    engine.say(command)
-    engine.runAndWait()
+    tts = gTTS(text=command, lang='en')
+    tts.save("temp.mp3")
+    os.system("start temp.mp3")  # For Windows
+    # os.system("afplay temp.mp3")  # For macOS
+    # os.system("mpg321 temp.mp3")  # For Linux
 
 @st.cache_data  
 def get_model_response(prompt):
