@@ -6,13 +6,10 @@
 
 import streamlit as st
 import speech_recognition as sr
-import requests
-import json
-import time
 from gtts import gTTS
 import os
-from streamlit_feedback import streamlit_feedback
-
+from response_logic import get_healthcare_response  
+ 
 st.title("ASK Dr.Rakna 🩺")
 st.markdown(
     """
@@ -24,25 +21,25 @@ st.markdown(
         background-repeat: no-repeat;
     }
     .user-message {
-        text-align: left;  /* Align user messages to the left */
+        text-align: left;  
         color: black;
         margin: 10px 0;
         padding: 10px;
         border-radius: 10px;
-        background-color: #e1f5fe;  /* Light blue for user messages */
+        background-color: #e1f5fe;  
         display: inline-block;
         max-width: 70%;
     }
     .bot-message {
-        text-align: right;  /* Align bot messages to the right */
+        text-align: right;  
         color: black;
         margin: 10px 0;
         padding: 10px;
         border-radius: 10px;
-        background-color: #c8e6c9;  /* Light green for bot messages */
+        background-color: #c8e6c9;  
         display: inline-block;
         max-width: 70%;
-        float: right;  /* Aligns the message to the right */
+        float: right;  
     }
     </style>
     """,
@@ -50,44 +47,20 @@ st.markdown(
 )
 
 recognizer = sr.Recognizer()
-API_URL = "http://localhost:11434/api/generate"  
 
 def speak_text(command):
-    tts = gTTS(text=command, lang='en')
-    tts.save("temp.mp3")
-    os.system("start temp.mp3")  # For Windows
-    # os.system("afplay temp.mp3")  # For macOS
-    # os.system("mpg321 temp.mp3")  # For Linux
-
-@st.cache_data  
-def get_model_response(prompt):
-    attempts = 3  
-    for attempt in range(attempts):
-        try:
-            response = requests.post(API_URL, json={"prompt": prompt, "model": "llama3.2"}, stream=True)
-            if response.status_code == 200:
-                full_response = ""
-                for chunk in response.iter_lines():
-                    if chunk:
-                        chunk_data = chunk.decode("utf-8")
-                        chunk_json = json.loads(chunk_data)
-                        full_response += chunk_json.get("response", "")
-                        if chunk_json.get("done", False):
-                            break
-                return full_response[:500] 
-            else:
-                return f"Error: {response.status_code} - {response.text}"
-        except Exception as e:
-            if attempt < attempts - 1:
-                time.sleep(2)  
-            else:
-                return f"Error: {str(e)}"
+    if command:  # Check if command is not empty
+        tts = gTTS(text=command, lang='en')
+        tts.save("temp.mp3")
+        os.system("start temp.mp3")  # For Windows
+    else:
+        st.error("unable to process please try again!")
 
 if 'conversation' not in st.session_state:
     st.session_state.conversation = []
 
 for message in st.session_state.conversation:
-    if "User " in message:
+    if "User   " in message:
         st.markdown(f"<div class='user-message'>{message}</div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='bot-message'>{message}</div>", unsafe_allow_html=True)
@@ -96,10 +69,10 @@ user_input = st.text_input("How can I help you:")
 
 if st.button("Send"):
     if user_input:
-        st.session_state.conversation.append(f":User  {user_input}")
-        response = get_model_response(user_input.lower())
-        st.session_state.conversation.append(f"Healthcare Assistant: {response}")
-        speak_text(response)
+        st.session_state.conversation.append(f":User   {user_input}")
+        response = get_healthcare_response(user_input.lower())
+        st.session_state.conversation.append(f"Dr.Rakna: {response}")
+        speak_text(response)  # Call speak_text for each response
 
 if st.button("Speak to Assistant"):
     with st.spinner("Listening..."):
@@ -109,10 +82,12 @@ if st.button("Speak to Assistant"):
                 audio = recognizer.listen(source)
                 recognized_text = recognizer.recognize_google(audio)
                 recognized_text = recognized_text.lower()
-                st.session_state.conversation.append(f":User  {recognized_text}")
-                response = get_model_response(recognized_text)
+                st.session_state.conversation.append(f":User   {recognized_text}")
+              
+                response = get_healthcare_response(recognized_text)
                 st.session_state.conversation.append(f"Dr.Rakna: {response}")
-                speak_text(response)
+
+                speak_text(response) 
         except sr.UnknownValueError:
             st.error("Sorry, I could not understand the audio.")
         except sr.RequestError:
@@ -122,7 +97,6 @@ sentiment_mapping = ["one", "two", "three", "four", "five"]
 selected = st.feedback("stars")
 if selected is not None:
     st.markdown(f"You selected {sentiment_mapping[selected]} star(s).")
-
     additional_remarks = st.text_area("Please provide additional remarks:")
 
 if st.button("Submit Feedback"):
