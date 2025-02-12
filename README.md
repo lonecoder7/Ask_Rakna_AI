@@ -45,7 +45,7 @@ pip install streamlit speechrecognition gtts
 1. **Clone the repository**:
 
    ```sh
-   git clone https://github.com/your-username/ask-dr-rakna.git
+   git clone https://github.com/lonecoder7/ask_dr_rakna.git
    ```
 
 2. **Navigate to the project directory**:
